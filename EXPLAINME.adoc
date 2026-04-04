@@ -1,25 +1,198 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
-= RSR Template Repository — Show Me The Receipts
+= pandoc-k9 — Show Me The Receipts
+Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 :toc:
 :icons: font
 
 The README makes claims. This file backs them up.
 
-[quote, README]
+== Pandoc Can Read and Write K9 Nickel Components
+
+[quote, k9-reader.lua]
 ____
-The AI reads the manifest, asks you a few questions, and handles everything.
+k9-reader.lua — Pandoc custom reader for K9 (Self-Validating Components)
+Parses .k9.ncl files into Pandoc's internal AST for documentation
+generation. K9 files are Nickel configuration with a specific schema —
+this reader extracts the structured metadata and presents it as
+human-readable documentation.
+Usage:
+  pandoc -f k9-reader.lua component.k9.ncl -o docs.html
+  pandoc -f k9-reader.lua component.k9.ncl -t markdown
 ____
+
+The repo contains two cooperating Lua files. `k9-reader.lua` implements the
+Pandoc custom reader protocol. `Reader(input, reader_options)` receives the raw
+`.k9.ncl` file content and uses `string.match` and `source:gmatch` to extract
+structured fields directly from the Nickel source text: `name`, `version`,
+`description`, `author`, `trust_level`, and the three permission flags
+(`allow_network`, `allow_filesystem_write`, `allow_subprocess`). It then
+assembles a Pandoc AST programmatically — a `Header(1)` title, a
+`Header(2)/BulletList` metadata table, a `Header(2)/BulletList` security
+profile, an italicised security level description paragraph, optional recipe
+blocks extracted by scanning for known recipe names (`install`, `validate`,
+`deploy`, `migrate`, `rollback`), and a final `CodeBlock` containing the full
+raw source for reference.
+
+`k9-writer.lua` reverses the process. `Writer(doc, opts)` extracts metadata
+from `doc.meta` (with `meta_string()` handling both `MetaString` and
+`MetaInlines` variants), walks `doc.blocks` to collect pedigree key-value
+pairs from `BulletList` items matching the `**key**: value` pattern, extracts
+recipe code from `CodeBlock` elements in recipe-named sections, and emits a
+Nickel `let pedigree = {...} in let security = {...} in let recipes = {...} in
+{...}` structure. The output is a syntactically valid `.k9.ncl` file that the
+K9 toolchain can evaluate.
+
+**Caveat:** The reader parses Nickel via regex rather than an actual Nickel
+parser. It will fail silently on non-standard formatting, multi-line string
+values, or Nickel constructs it does not recognise (e.g. `import`, `match`,
+function definitions). The `trust_level` extraction matches the Nickel enum
+apostrophe prefix (`'Kennel`, `'Yard`, `'Hunt`) — the reader strips the
+apostrophe and stores the bare string. The writer always uses `Kennel`-level
+permission flags for `Yard` security level (a logic error: `Yard` should set
+`allow_network = false` but also differs from `Kennel` in allowing Nickel
+evaluation — the current writer sets all permissions to `false` for both
+`Kennel` and `Yard`). The recipe extractor uses a greedy name-match pattern
+that may produce duplicate or misordered recipes when section names contain
+the recipe keywords as substrings.
+
+- Reader entry: `k9-reader.lua:17` (`Reader(input, reader_options)`)
+- Writer entry: `k9-writer.lua:26` (`Writer(doc, opts)`)
+- Sample K9 file: `sample.k9` (Kennel-level hello-world component)
+- Sample Nickel config: `sample.k9.ncl` (Nickel format variant)
+- Round-trip: `pandoc -f k9.lua input.k9.ncl -t k9-writer.lua -o roundtrip.k9.ncl`
+- Learn more: https://nickel-lang.org (Nickel configuration language), https://github.com/hyperpolymath/k9-showcase[k9-showcase], https://pandoc.org/custom-readers.html
+
+== K9 Three-Level Security Model
+
+[quote, k9-reader.lua]
+____
+local trust_level = source:match("trust_level%s*=%s*'(%w+)") or "Kennel"
+-- Kennel: Data-only. No execution capabilities. Strict sandbox.
+-- Yard:   Nickel evaluation with limited I/O. Capability-based sandbox.
+-- Hunt:   Full execution with shell commands. Signature REQUIRED. Minimal sandbox.
+____
+
+The `trust_level` field determines the permission profile of the K9 component.
+`'Kennel` is the safest level: pure data, no code execution, safe to parse
+anywhere. `'Yard` allows Nickel evaluation and limited I/O but no subprocess
+calls. `'Hunt` allows full shell command execution via recipes, and
+requires a cryptographic signature. The reader extracts the level and maps
+it to a human-readable description in the security profile section of the
+generated documentation. The writer maps the `k9-security-level` Pandoc
+metadata field to the Nickel enum output, and conditionally sets all three
+`allow_*` flags based on the level.
+
+This three-level taxonomy directly mirrors the K9 Self-Validating Component
+standard (`k9-svc`) and is used throughout the account's deployment tooling
+(`contractile`, `selur`, `vordr`).
+
+**Caveat:** The writer's security flag logic for `Yard` level is a copy-paste
+of the `Kennel` branch (all permissions false). The correct `Yard` behaviour
+— allowing Nickel evaluation but not subprocess — cannot be expressed purely
+through the three boolean permission flags; a fourth flag or a richer security
+record would be needed. This is a known gap between the writer output and the
+K9 schema.
+
+- Security level extraction: `k9-reader.lua:26` (trust_level match pattern)
+- Security description: `k9-reader.lua:59–67` (level_desc mapping)
+- Writer security block: `k9-writer.lua:103–135` (permission flag generation)
+- Learn more: https://github.com/hyperpolymath/k9_gleam[k9-gleam], https://github.com/hyperpolymath/k9_ex[k9-ex]
+
+== Nickel Metadata Extraction by Pattern Matching
+
+[quote, k9-reader.lua]
+____
+local name = source:match('name%s*=%s*"(.-)"') or "Unknown Component"
+local version = source:match('version%s*=%s*"(.-)"') or "0.0.0"
+local description = source:match('description%s*=%s*"(.-)"') or ""
+____
+
+The reader's pattern matching strategy is deliberately simple: `string.match`
+with Lua patterns that handle optional whitespace around `=` and extract
+quoted string values. This covers the standard K9 pedigree block but not
+multi-line string values (Nickel's `m%"..."` syntax), computed values, or
+imported identifiers. For the recipe extractor, `source:gmatch` iterates
+over all `key = "value"` pairs in the source and checks if the key is one of
+the five known recipe names — meaning recipes must be defined as simple
+single-line string values, not as Nickel function definitions or multi-line
+strings.
+
+The writer's `escape_nickel` function handles the three characters that must
+be escaped in Nickel double-quoted strings: backslash, double-quote, and
+newline. It does not handle Nickel-specific escapes like `%{` (interpolation)
+or tab characters.
+
+**Caveat:** Both files assume K9 components use only double-quoted string
+values for all fields. The Nickel type system allows much richer value
+types (records, arrays, functions, imports). Components using those features
+will produce incomplete or incorrect documentation/roundtrip output.
+
+- Field extraction: `k9-reader.lua:23–30` (name, version, description, author, trust_level, security flags)
+- Recipe extraction: `k9-reader.lua:73–85` (gmatch over known recipe names)
+- Writer escape: `k9-writer.lua:202–206` (escape_nickel: backslash, quote, newline)
+
+== MIT License (LuaRocks Distribution)
+
+[quote, k9-reader.lua]
+____
+-- SPDX-License-Identifier: MIT
+-- Copyright (c) 2026 Jonathan D.A. Jewell
+____
+
+Identical to `pandoc-a2ml`: the Lua source files carry MIT for LuaRocks
+compatibility (`pandoc-k9-scm-1.rockspec`). The repository wrapper and CI
+remain PMPL-1.0-or-later.
+
+- License files: `LICENSE` (PMPL-1.0-or-later for repo), Lua source files carry MIT
+- LuaRocks spec: `pandoc-k9-scm-1.rockspec`
+- Learn more: https://luarocks.org/modules/hyperpolymath/pandoc-k9 (forthcoming)
+
+== Dogfooded Across The Account
+
+[cols="1,2"]
+|===
+| Technology | Also Used In
+
+| **K9 Self-Validating Components** | https://github.com/hyperpolymath/k9-showcase[k9-showcase], https://github.com/hyperpolymath/k9_gleam[k9-gleam], https://github.com/hyperpolymath/k9_ex[k9-ex], https://github.com/hyperpolymath/tree-sitter-k9[tree-sitter-k9]
+
+| **Nickel configuration language** | https://github.com/hyperpolymath/awesome-nickel[awesome-nickel], https://github.com/hyperpolymath/bofig[bofig], https://github.com/hyperpolymath/format-registrations[format-registrations]
+
+| **Pandoc Lua API** | https://github.com/hyperpolymath/pandoc-a2ml[pandoc-a2ml] (A2ML reader/writer/filter), https://github.com/hyperpolymath/docmatrix[docmatrix]
+
+| **Three-level security taxonomy** | https://github.com/hyperpolymath/contractiles[contractiles], https://github.com/hyperpolymath/selur[selur] (container orchestration), deployment tooling
+
+| **LuaRocks packaging** | https://github.com/hyperpolymath/pandoc-a2ml[pandoc-a2ml] (`pandoc-a2ml-scm-1.rockspec`)
+|===
 
 == File Map
 
 [cols="1,2"]
 |===
-| Path | What's There
+| Path | Proves
 
-| `src/` | Source code
-| `test(s)/` | Test suite
+| `k9-reader.lua` | Pandoc custom reader: `Reader()` entry, regex-based Nickel field extraction → Pandoc AST (title header, metadata BulletList, security BulletList, security level description, recipe CodeBlocks, raw source CodeBlock)
+
+| `k9-writer.lua` | Pandoc custom writer: `Writer()` entry, Pandoc AST → K9 Nickel output (`let pedigree/security/recipes/config in {...}`), `meta_string()` Pandoc metadata extractor, `escape_nickel()` string escaper
+
+| `k9.lua` | Combined reader convenience script (single `--from` target)
+
+| `k9-filter.lua` | Post-processing Lua filter for K9 documents (parallel to `a2ml-filter.lua`)
+
+| `sample.k9` | Reference K9 component in K9 format (Kennel-level, hello-world, magic number `K9!` prefix)
+
+| `sample.k9.ncl` | Reference K9 component in Nickel format (Nickel-first representation)
+
+| `k9.html` | Pre-generated HTML render of the sample K9 component
+
+| `pandoc-k9-scm-1.rockspec` | LuaRocks package specification
+
+| `Makefile` | Build targets: `make html` (render sample), `make test` (run Lua tests), `make install` (LuaRocks install)
+
+| `tests/test_k9.lua` | Unit tests for reader and writer
+
+| `tests/property_test.lua` | Property tests: `read(write(doc)) == doc` round-trip for generated K9 components
+
+| `0-AI-MANIFEST.a2ml` | AI session gatekeeper — read first before modifying any file
+
+| `.machine_readable/` | A2ML state files: STATE.a2ml, ECOSYSTEM.a2ml, META.a2ml
 |===
-
-== Questions?
-
-Open an issue or reach out directly — happy to explain anything in more detail.
