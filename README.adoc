@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 = pandoc-k9
 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 :toc:
@@ -57,4 +57,4 @@ pandoc -f k9-reader.lua input.k9.ncl -t k9-writer.lua -o roundtrip.k9.ncl
 
 == License
 
-PMPL-1.0-or-later. See link:LICENSE[LICENSE].
+MPL-2.0. See link:LICENSE[LICENSE].

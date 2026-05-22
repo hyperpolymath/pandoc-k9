@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 = pandoc-k9 — Show Me The Receipts
 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 :toc:
@@ -141,9 +141,9 @@ ____
 
 Identical to `pandoc-a2ml`: the Lua source files carry MIT for LuaRocks
 compatibility (`pandoc-k9-scm-1.rockspec`). The repository wrapper and CI
-remain PMPL-1.0-or-later.
+remain MPL-2.0.
 
-- License files: `LICENSE` (PMPL-1.0-or-later for repo), Lua source files carry MIT
+- License files: `LICENSE` (MPL-2.0 for repo), Lua source files carry MIT
 - LuaRocks spec: `pandoc-k9-scm-1.rockspec`
 - Learn more: https://luarocks.org/modules/hyperpolymath/pandoc-k9 (forthcoming)
 

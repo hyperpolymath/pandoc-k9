@@ -1,4 +1,4 @@
--- SPDX-License-Identifier: PMPL-1.0-or-later
+-- SPDX-License-Identifier: MPL-2.0
 -- Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 --
 -- test_k9.lua — Unit and property tests for the K9 pandoc filter.
@@ -54,7 +54,7 @@ local function is_spdx(line)
   return line:match("SPDX%-License%-Identifier:") ~= nil
 end
 
-assert_true("SPDX line detected", is_spdx("# SPDX-License-Identifier: PMPL-1.0-or-later"))
+assert_true("SPDX line detected", is_spdx("# SPDX-License-Identifier: MPL-2.0"))
 assert_true("SPDX in comment", is_spdx("-- SPDX-License-Identifier: MIT"))
 assert_false("Non-SPDX rejected", is_spdx("just a comment"))
 assert_false("Empty rejected", is_spdx(""))
@@ -126,7 +126,7 @@ io.write("\n=== Property Tests: Document Structure ===\n")
 
 -- Property: A valid K9 file always starts with magic number
 local VALID_K9_DOCS = {
-  "K9!\n# SPDX-License-Identifier: PMPL-1.0-or-later\nname: foo",
+  "K9!\n# SPDX-License-Identifier: MPL-2.0\nname: foo",
   "K9!\nversion: 1.0.0",
   "K9! # with comment\nname: bar",
 }
@@ -174,7 +174,7 @@ io.write("\n=== E2E: Complete K9 Document Parse ===\n")
 
 local k9_doc = [[
 K9!
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 name: test-component
 version: 1.0.0
 description: A test component for validation

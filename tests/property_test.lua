@@ -1,4 +1,4 @@
--- SPDX-License-Identifier: PMPL-1.0-or-later
+-- SPDX-License-Identifier: MPL-2.0
 -- Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 --
 -- property_test.lua — Property-based tests for K9 pandoc filter invariants.
@@ -71,7 +71,7 @@ end
 -- Property: All K9 files must have SPDX header (grep-checkable invariant)
 local SPDX_PATTERN = "SPDX%-License%-Identifier:"
 local SAMPLE_FILES_WITH_SPDX = {
-  "# SPDX-License-Identifier: PMPL-1.0-or-later\nname: foo",
+  "# SPDX-License-Identifier: MPL-2.0\nname: foo",
   "-- SPDX-License-Identifier: MIT\nversion: 1.0.0",
 }
 for _, content in ipairs(SAMPLE_FILES_WITH_SPDX) do

@@ -28,14 +28,14 @@ function Writer(doc, opts)
   local function add(s) table.insert(buffer, s) end
 
   -- SPDX header
-  add("# SPDX-License-Identifier: PMPL-1.0-or-later")
+  add("# SPDX-License-Identifier: MPL-2.0")
 
   -- Extract metadata from the document
   local meta = doc.meta or {}
   local title = meta_string(meta, "title") or "untitled"
   local version = meta_string(meta, "version") or "0.1.0"
   local security = meta_string(meta, "k9-security-level") or "Kennel"
-  local spdx = meta_string(meta, "spdx-license") or "PMPL-1.0-or-later"
+  local spdx = meta_string(meta, "spdx-license") or "MPL-2.0"
 
   add("")
 
