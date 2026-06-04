@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 // Template: QUICKSTART-USER.adoc — 5-minute path to working software
 // Replace pandoc-k9, Pandoc K9 — See README.adoc for details., just run, Pandoc K9 started successfully. with actuals
 = pandoc-k9 — Quick Start for Users
