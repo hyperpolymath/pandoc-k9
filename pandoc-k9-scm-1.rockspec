@@ -1,4 +1,4 @@
--- SPDX-License-Identifier: MIT
+-- SPDX-License-Identifier: MPL-2.0
 -- (MPL-2.0 preferred; MIT required for LuaRocks OSI-approved policy)
 --
 -- pandoc-k9-scm-1.rockspec — LuaRocks package spec for pandoc-k9.

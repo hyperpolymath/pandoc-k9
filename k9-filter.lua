@@ -1,4 +1,4 @@
--- SPDX-License-Identifier: MIT
+-- SPDX-License-Identifier: MPL-2.0
 -- Copyright (c) 2026 Jonathan D.A. Jewell
 --
 -- k9-filter.lua — Pandoc Lua filter for K9 Self-Validating Component documents.

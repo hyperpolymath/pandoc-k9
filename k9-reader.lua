@@ -1,4 +1,4 @@
--- SPDX-License-Identifier: MIT
+-- SPDX-License-Identifier: MPL-2.0
 -- Copyright (c) 2026 Jonathan D.A. Jewell
 --
 -- k9-reader.lua — Pandoc custom reader for K9 (Self-Validating Components)
