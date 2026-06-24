@@ -55,7 +55,7 @@ local function is_spdx(line)
 end
 
 assert_true("SPDX line detected", is_spdx("# SPDX-License-Identifier: MPL-2.0"))
-assert_true("SPDX in comment", is_spdx("-- SPDX-License-Identifier: MIT"))
+assert_true("SPDX in comment", is_spdx("-- SPDX-License-Identifier: MPL-2.0"))
 assert_false("Non-SPDX rejected", is_spdx("just a comment"))
 assert_false("Empty rejected", is_spdx(""))
 

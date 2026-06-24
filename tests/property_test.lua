@@ -72,7 +72,7 @@ end
 local SPDX_PATTERN = "SPDX%-License%-Identifier:"
 local SAMPLE_FILES_WITH_SPDX = {
   "# SPDX-License-Identifier: MPL-2.0\nname: foo",
-  "-- SPDX-License-Identifier: MIT\nversion: 1.0.0",
+  "-- SPDX-License-Identifier: MPL-2.0\nversion: 1.0.0",
 }
 for _, content in ipairs(SAMPLE_FILES_WITH_SPDX) do
   assert_true("SPDX present in valid file", content:match(SPDX_PATTERN) ~= nil)
